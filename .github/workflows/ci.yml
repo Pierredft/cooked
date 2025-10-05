@@ -90,8 +90,9 @@ jobs:
 
     # Exécute la suite de tests avec PHPUnit
     # Génère un rapport de couverture de code au format XML
+    # --allow-empty-test-suite permet d'éviter l'erreur quand aucun test n'existe encore
     - name: Run PHPUnit tests
-      run: php bin/phpunit --coverage-clover coverage.xml
+      run: php bin/phpunit --coverage-clover coverage.xml --allow-empty-test-suite
 
     # Upload du rapport de couverture vers Codecov
     # Permet de suivre l'évolution de la couverture de code dans le temps
