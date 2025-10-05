@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "echo \"Add your build command here\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "composer exec phpunit"
   },
   "repository": {
     "type": "git",
