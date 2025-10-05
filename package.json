@@ -1,0 +1,25 @@
+{
+  "name": "cooked",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "build": "echo \"Build completed - no frontend build process configured yet\"",
+    "test": "echo \"Frontend tests passed - no frontend tests configured yet\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pierredft/cooked.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Pierredft/cooked/issues"
+  },
+  "homepage": "https://github.com/Pierredft/cooked#readme"
+}
