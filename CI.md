@@ -263,3 +263,43 @@ Cette CI Version 1 est une base solide. Pour l'améliorer, on pourra ajouter :
 5. **Respectez les standards** de codage
 
 Cette CI Version 1 vous donne une excellente fondation pour développer sereinement ! 🎉
+
+---
+
+## 🐛 Corrections appliquées
+
+### Problème de compatibilité PHPUnit (Résolu)
+
+**Problème initial :**
+```
+phpunit/phpunit 12.4.0 requires php >=8.3 -> your php version (8.2.29) does not satisfy that requirement
+```
+
+**Cause :** PHPUnit 12.4+ nécessite PHP 8.3+, mais notre CI testait sur PHP 8.2 et 8.3.
+
+**Solution appliquée :**
+- Downgrade de PHPUnit de `^12.4` vers `^11.0` dans `composer.json`
+- PHPUnit 11 est compatible avec PHP 8.2+ et offre les mêmes fonctionnalités essentielles
+
+**Commandes pour résoudre localement :**
+```bash
+# Modifier composer.json pour utiliser PHPUnit 11
+composer require --dev phpunit/phpunit:^11.0
+
+# Mettre à jour le lock file
+composer update phpunit/phpunit
+
+# Vérifier que les tests fonctionnent
+php bin/phpunit
+```
+
+### Option deprecated --no-suggest (Résolu)
+
+**Problème :**
+```
+You are using the deprecated option "--no-suggest". It has no effect and will break in Composer 3.
+```
+
+**Solution :** Suppression de `--no-suggest` de toutes les commandes `composer install` dans le fichier CI.
+
+Ces corrections garantissent que notre CI Version 1 fonctionne correctement sur PHP 8.2 et 8.3 ! ✅

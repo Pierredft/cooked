@@ -63,7 +63,7 @@ jobs:
 
     # Installe les dépendances PHP via Composer
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      run: composer install --prefer-dist --no-progress
 
     # Configure l'environnement de test
     # Crée un fichier .env.test.local avec la configuration spécifique aux tests
@@ -129,7 +129,7 @@ jobs:
 
     # Installe les dépendances
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      run: composer install --prefer-dist --no-progress
 
     # Vérifie le respect des standards de codage PHP
     # PHP CS Fixer applique les règles de formatage et de style
