@@ -1,0 +1,199 @@
+# Configuration CI pour le projet Symfony Cooked
+# Cette pipeline s'exécute automatiquement pour valider la qualité du code
+name: CI
+
+# Déclencheurs : quand la CI doit s'exécuter
+on:
+  # À chaque push sur les branches principales
+  push:
+    branches: [ master, develop ]
+  # À chaque création/mise à jour de Pull Request vers ces branches
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  # Job principal : Tests unitaires et fonctionnels
+  tests:
+    runs-on: ubuntu-latest
+    
+    # Stratégie de matrice : teste sur plusieurs versions de PHP
+    # Permet de s'assurer que le code fonctionne sur différentes versions
+    strategy:
+      matrix:
+        php-version: [8.2, 8.3]
+        
+    # Services externes nécessaires aux tests
+    services:
+      # Base de données MySQL pour les tests d'intégration
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: cooked_test
+        ports:
+          - 3306:3306
+        # Health checks pour s'assurer que MySQL est prêt avant les tests
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    # Récupère le code source du repository
+    - uses: actions/checkout@v4
+
+    # Configure l'environnement PHP avec les extensions nécessaires
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        # Extensions PHP requises par Symfony et notre application
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, pdo, zip
+        tools: composer:v2
+        # Active Xdebug pour générer les rapports de couverture de code
+        coverage: xdebug
+
+    # Met en cache les dépendances Composer pour accélérer les builds
+    # Évite de retélécharger les packages à chaque exécution
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-${{ matrix.php-version }}-
+
+    # Installe les dépendances PHP via Composer
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    # Configure l'environnement de test
+    # Crée un fichier .env.test.local avec la configuration spécifique aux tests
+    - name: Create .env.test file
+      run: |
+        cp .env .env.test.local
+        echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/cooked_test" >> .env.test.local
+        echo "APP_ENV=test" >> .env.test.local
+
+    # Attend que MySQL soit complètement opérationnel
+    # Évite les erreurs de connexion pendant les tests
+    - name: Wait for MySQL
+      run: |
+        while ! mysqladmin ping -h127.0.0.1 -P3306 -uroot -proot --silent; do
+          sleep 1
+        done
+
+    # Prépare la base de données de test
+    # Crée la BDD et applique les migrations pour avoir un schéma à jour
+    - name: Create database
+      run: |
+        php bin/console doctrine:database:create --env=test --no-interaction
+        php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+    # Exécute la suite de tests avec PHPUnit
+    # Génère un rapport de couverture de code au format XML
+    - name: Run PHPUnit tests
+      run: php bin/phpunit --coverage-clover coverage.xml
+
+    # Upload du rapport de couverture vers Codecov
+    # Permet de suivre l'évolution de la couverture de code dans le temps
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  # Job dédié à l'analyse de la qualité du code
+  # Vérifie le respect des standards de codage et détecte les problèmes potentiels
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Récupère le code source
+    - uses: actions/checkout@v4
+
+    # Configure PHP avec les outils nécessaires
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.2
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, pdo, zip
+        # cs2pr : convertit les rapports en annotations GitHub
+        tools: composer:v2, cs2pr
+
+    # Cache Composer pour accélérer les builds
+    - name: Cache Composer packages
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-8.2-${{ hashFiles('**/composer.lock') }}
+
+    # Installe les dépendances
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    # Vérifie le respect des standards de codage PHP
+    # PHP CS Fixer applique les règles de formatage et de style
+    - name: Run PHP CS Fixer
+      run: |
+        composer require --dev friendsofphp/php-cs-fixer
+        vendor/bin/php-cs-fixer fix --dry-run --format=checkstyle | cs2pr
+
+    # Analyse statique du code avec PHPStan
+    # Détecte les erreurs potentielles, types incorrects, code mort, etc.
+    - name: Run PHPStan
+      run: |
+        composer require --dev phpstan/phpstan phpstan/phpstan-symfony
+        vendor/bin/phpstan analyse src --level=6 --no-progress
+
+  # Job dédié à la sécurité
+  # Vérifie les vulnérabilités connues dans les dépendances
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Récupère le code source
+    - uses: actions/checkout@v4
+
+    # Configure PHP minimal pour l'analyse de sécurité
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.2
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
+
+    # Analyse de sécurité avec le Security Checker de Symfony
+    # Vérifie si les dépendances Composer ont des vulnérabilités connues
+    - name: Security Check
+      uses: symfonycorp/security-checker-action@v5
+
+  # Job pour la compilation et les tests des assets frontend
+  # Important pour les applications avec du JavaScript/CSS
+  assets:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Récupère le code source
+    - uses: actions/checkout@v4
+
+    # Configure Node.js pour la gestion des assets
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        # Met en cache node_modules pour accélérer les builds
+        cache: 'npm'
+
+    # Installe les dépendances Node.js de manière reproductible
+    # npm ci est plus rapide et plus fiable que npm install en CI
+    - name: Install dependencies
+      run: npm ci
+
+    # Compile les assets (CSS, JS, images, etc.)
+    # Vérifie que la compilation se passe sans erreur
+    - name: Build assets
+      run: npm run build
+
+    # Exécute les tests frontend (si configurés)
+    # Tests unitaires JS, linting, etc.
+    - name: Run asset tests
+      run: npm test
