@@ -529,3 +529,244 @@ Usage: phpunit [options] UnitTest [UnitTest.php]
 🎉 **CI fonctionnelle à 100%** sur PHP 8.2 et 8.3 avec tous les jobs au vert !
 
 Cette expérience de debugging nous a permis de construire une CI plus robuste et de documenter les pièges courants pour les futurs développeurs du projet.
+
+---
+
+# CI Version 2 : Premier développement fonctionnel
+
+## 🎯 **Objectif de cette version**
+
+Maintenant que notre CI Version 1 est stable et fonctionnelle, nous passons à l'étape suivante : **développer les premières fonctionnalités** de notre application Symfony "Cooked" tout en s'appuyant sur notre pipeline CI.
+
+## 📅 **Contexte du commit**
+
+**Date :** 5 octobre 2025  
+**Commit :** Premier contrôleur HomeController + Installation des outils de qualité  
+**Branche :** `pierre` → `master`  
+
+## 🚀 **Nouveautés ajoutées**
+
+### 1. **Premier contrôleur fonctionnel**
+
+#### `src/Controller/HomeController.php`
+```php
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+final class HomeController extends AbstractController
+{
+    #[Route('/', name: 'app_home')]
+    public function index(): Response
+    {
+        return $this->render('home/home.html.twig', [
+            'controller_name' => 'HomeController',
+        ]);
+    }
+}
+```
+
+**Pourquoi ce contrôleur :**
+- **Page d'accueil** : Route principale `/` de l'application
+- **Architecture Symfony** : Respect des conventions (AbstractController, attributes routes)
+- **Template Twig** : Séparation logique/présentation
+- **Premier code métier** : Base pour construire les fonctionnalités "Cooked"
+
+#### `templates/home/home.html.twig`
+```twig
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello HomeController!{% endblock %}
+
+{% block body %}
+<div class="example-wrapper">
+    <h1>Hello {{ controller_name }}! ✅</h1>
+    <!-- Page d'accueil de l'application Cooked -->
+</div>
+{% endblock %}
+```
+
+**Pourquoi ce template :**
+- **Héritage Twig** : Extend du layout de base
+- **Variables dynamiques** : Utilisation de `{{ controller_name }}`
+- **Structure HTML** : Prêt pour le design de l'app "Cooked"
+- **Évolutif** : Base pour ajouter le contenu métier
+
+### 2. **Installation complète des outils de qualité**
+
+#### Ajout de PHPStan et extensions
+```bash
+composer require --dev phpstan/phpstan phpstan/phpstan-symfony
+```
+
+**Nouvelles dépendances installées :**
+- `phpstan/phpstan ^2.1` : Analyse statique du code PHP
+- `phpstan/phpstan-symfony ^2.0` : Extensions spécifiques à Symfony
+
+#### Fichier de configuration PHPStan créé
+```yaml
+# phpstan.dist.neon (généré automatiquement)
+parameters:
+    level: 6
+    paths:
+        - src
+    symfony:
+        container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
+```
+
+**Pourquoi ces outils :**
+- **Analyse préventive** : Détecte les erreurs avant l'exécution
+- **Compatibilité Symfony** : Comprend les spécificités du framework
+- **Niveau 6** : Bon équilibre entre rigueur et praticité
+- **Intégration CI** : S'exécute automatiquement dans notre pipeline
+
+## 🔄 **Impact sur la CI**
+
+### ✅ **Tests automatiques déjà effectués**
+
+Notre CI Version 1 a **automatiquement analysé** le nouveau code :
+
+1. **PHPStan** : Analyse du `HomeController`
+   - Vérification des types
+   - Validation des appels de méthodes
+   - Contrôle de la logique
+
+2. **PHP CS Fixer** : Vérification du style
+   - Format du code respecté
+   - Conventions Symfony appliquées
+   - Imports optimisés
+
+3. **Security Check** : Scan des nouvelles dépendances
+   - PHPStan et extensions vérifiées
+   - Aucune vulnérabilité détectée
+
+4. **Tests PHPUnit** : Suite toujours vide mais acceptée
+   - Option `--do-not-fail-on-empty-test-suite` fonctionnelle
+   - Prêt pour les futurs tests
+
+### 🎯 **Résultat : CI au vert complet !**
+
+**Tous les jobs passent ✅**
+- ✅ Tests (PHP 8.2 et 8.3)
+- ✅ Qualité de code
+- ✅ Sécurité
+- ✅ Assets frontend
+
+## 📊 **Métriques de cette version**
+
+### Code ajouté :
+- **1 contrôleur** : `HomeController.php` (18 lignes)
+- **1 template** : `home.html.twig` (21 lignes)
+- **2 dépendances** : PHPStan + extension Symfony
+- **1 fichier config** : `phpstan.dist.neon`
+
+### Fonctionnalités :
+- ✅ Page d'accueil fonctionnelle
+- ✅ Routing Symfony opérationnel
+- ✅ Templating Twig configuré
+- ✅ Outils d'analyse statique prêts
+
+## 🧪 **Test de la nouvelle fonctionnalité**
+
+### Vérification locale :
+```bash
+# Démarrer le serveur Symfony
+symfony server:start
+
+# Accéder à http://localhost:8000
+# → Affiche la page "Hello HomeController! ✅"
+
+# Vérifier les routes
+php bin/console debug:router
+# → Route app_home : GET / 
+
+# Tester PHPStan localement
+vendor/bin/phpstan analyse src --level=6
+# → No errors
+```
+
+### Vérification CI :
+- Push vers GitHub ✅
+- Déclenchement automatique de la CI ✅
+- Tous les jobs passent au vert ✅
+- Code analysé et validé automatiquement ✅
+
+## 🎯 **Évolution par rapport à la Version 1**
+
+### Ce qui reste identique :
+- ✅ Structure de la CI inchangée
+- ✅ Même configuration de jobs
+- ✅ Même niveau de vérifications
+- ✅ Documentation complète
+
+### Ce qui s'améliore :
+- 🚀 **Premier code métier** analysé par la CI
+- 🚀 **Outils de qualité** effectivement utilisés
+- 🚀 **Application fonctionnelle** (page d'accueil)
+- 🚀 **Preuve de concept** : la CI s'adapte automatiquement
+
+## 💡 **Leçons apprises - Version 2**
+
+### 1. **La CI s'adapte automatiquement**
+- Aucune modification de pipeline nécessaire
+- Nouveau code immédiatement analysé
+- Validation automatique des standards
+
+### 2. **Outils de qualité opérationnels**
+- PHPStan détecte les problèmes potentiels
+- Configuration Symfony prise en compte
+- Analyse adaptée au contexte du framework
+
+### 3. **Workflow de développement fluide**
+```
+Développement local → Commit → Push → CI automatique → Validation
+```
+
+### 4. **Base solide pour la suite**
+- Structure MVC en place
+- Outils de qualité configurés
+- Pipeline CI robuste et évolutive
+
+## 🚀 **Prochaines étapes - Version 3**
+
+Avec cette base fonctionnelle, nous pourrons ajouter :
+
+### Développement :
+- **Entités Doctrine** (User, Recipe, etc.)
+- **Contrôleurs métier** (RecipeController, UserController)
+- **Services métier** (RecipeService, UserService)
+- **Formulaires Symfony** (RecipeType, UserType)
+
+### Tests :
+- **Tests unitaires** pour les services
+- **Tests fonctionnels** pour les contrôleurs
+- **Tests d'intégration** pour les repositories
+- **Tests end-to-end** avec Panther
+
+### CI/CD Evolution :
+- **Fixtures de test** automatiques
+- **Tests de performance** avec Blackfire
+- **Analyse de sécurité** renforcée
+- **Déploiement automatique** (CD Version 1)
+
+## 📈 **Bilan de la Version 2**
+
+### ✅ Objectifs atteints :
+1. **Premier code fonctionnel** déployé et validé
+2. **CI automatique** qui s'adapte sans modification
+3. **Outils de qualité** opérationnels et efficaces
+4. **Base solide** pour le développement futur
+
+### 🎯 Impact :
+- **Confiance** : Le code est automatiquement validé
+- **Rapidité** : Feedback immédiat sur la qualité
+- **Évolutivité** : Prêt pour des fonctionnalités complexes
+- **Professionnalisme** : Standards industriels respectés
+
+**La CI Version 2 prouve que notre architecture initiale était bien pensée !** 🎉
+
+Notre projet "Cooked" a maintenant une **page d'accueil fonctionnelle** et une **pipeline CI robuste** qui valide automatiquement chaque ligne de code. Nous sommes prêts pour développer les vraies fonctionnalités métier ! 🍳👨‍🍳
